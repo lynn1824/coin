@@ -1,0 +1,72 @@
+let http = require('http');
+let Utils = require('./common/Utils');
+let $ajax = require('./common/Ajax');
+let JBO = require('./lib/jubi');
+let YBO = require('./lib/yubi');
+
+let totalAmount = 10000000; // 总金额
+let JB_Obj = {
+    CNY: 2075000,
+    count: 100,
+    currentPrice: 29250.00
+}
+let YB_Obj = {
+    CNY: 2060307,
+    count: 100,
+    currentPrice: 29396.93
+}
+
+// 交易次数
+let transactionCount = 0;
+// 单笔交易数量
+let transactionCoinNumber = 0.1;
+// 循环调用
+let interval = null
+
+// 交易
+function transaction() {
+    return new Promise(function (resolve, reject) {
+        if (JB_Obj.currentPrice > YB_Obj.currentPrice) {
+            JB_Obj.count = Utils.FloatSub(JB_Obj.count, transactionCoinNumber);
+            JB_Obj.CNY = Utils.FloatAdd(JB_Obj.CNY, Utils.FloatMul(JB_Obj.currentPrice , transactionCoinNumber));
+
+            YB_Obj.count = Utils.FloatAdd(YB_Obj.count, transactionCoinNumber);
+            YB_Obj.CNY = Utils.FloatSub(YB_Obj.CNY, Utils.FloatMul(YB_Obj.currentPrice , transactionCoinNumber));
+        } else {
+            JB_Obj.count = Utils.FloatAdd(JB_Obj.count, transactionCoinNumber);
+            JB_Obj.CNY = Utils.FloatSub(JB_Obj.CNY, Utils.FloatMul(JB_Obj.currentPrice , transactionCoinNumber));
+
+            YB_Obj.count = Utils.FloatSub(YB_Obj.count, transactionCoinNumber);
+            YB_Obj.CNY = Utils.FloatAdd(YB_Obj.CNY, Utils.FloatMul(YB_Obj.currentPrice, transactionCoinNumber));
+        }
+        setTimeout(function () {
+            resolve(0);
+        }, 3000)
+    })
+}
+
+function setJBPrice() {
+    return new Promise(function (resolve, reject) {
+        JBO.getCurrentPrice().then(function (res) {
+            JB_Obj.currentPrice = res['last'];
+            resolve();
+        }, function (errInfo) {
+            reject(errInfo);
+        });
+    })
+}
+
+function setYBPrice() {
+    return new Promise(function (resolve, reject) {
+        YBO.getCurrentPrice().then(function (res) {
+            YB_Obj.currentPrice = res['ticker']['last'];
+            resolve();
+        }, function (errInfo) {
+            reject(errInfo);
+        });
+    })
+}
+
+// 开始交易
+console.log('启动交易程序....');
+start();
